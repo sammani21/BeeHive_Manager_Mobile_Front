@@ -1,0 +1,2 @@
+C:/Users/KaviRajasooriya/Documents/BeeHive Manager/BeeHive_Manager_Mobile/beekeeper_front/android/app/.cxx/Debug/46603a5u/arm64-v8a/CMakeFiles/edit_cache.dir
+C:/Users/KaviRajasooriya/Documents/BeeHive Manager/BeeHive_Manager_Mobile/beekeeper_front/android/app/.cxx/Debug/46603a5u/arm64-v8a/CMakeFiles/rebuild_cache.dir

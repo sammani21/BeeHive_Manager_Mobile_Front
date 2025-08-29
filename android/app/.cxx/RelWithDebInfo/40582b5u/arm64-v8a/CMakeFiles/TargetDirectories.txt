@@ -1,0 +1,2 @@
+C:/Users/KaviRajasooriya/Documents/software project/driver login/driver login/pass_log/android/app/.cxx/RelWithDebInfo/40582b5u/arm64-v8a/CMakeFiles/edit_cache.dir
+C:/Users/KaviRajasooriya/Documents/software project/driver login/driver login/pass_log/android/app/.cxx/RelWithDebInfo/40582b5u/arm64-v8a/CMakeFiles/rebuild_cache.dir
