@@ -58,19 +58,13 @@ class _LoginScreenState extends State<LoginScreen> {
       });
 
       if (response.statusCode == 200) {
-        //204 kiwwama content ekak na eka 200 karala balana
-        // ignore: avoid_print
-        //print('response body: ${response.body}');
-
         final responseData = jsonDecode(response.body);
         if (kDebugMode) {
           print(responseData);
         }
 
         SharedPreferences prefs = await SharedPreferences.getInstance();
-
         await prefs.setString('token', responseData['token']);
-
         await prefs.setString('beekeeper', jsonEncode(responseData['data']));
 
         // ignore: use_build_context_synchronously
@@ -147,7 +141,7 @@ class _LoginScreenState extends State<LoginScreen> {
       color = Colors.orange;
       text = "Medium";
     } else if (strength == "Strong") {
-      color = const Color(0xFF3A7D44); // Green color from second code
+      color = const Color(0xFF3A7D44);
       text = "Strong";
     } else {
       color = Colors.red;
@@ -175,246 +169,262 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
       body: Stack(
         children: [
-          SingleChildScrollView(
-            child: Stack(
-              children: [
-                ClipPath(
-                  child: Container(
-                    color: Colors.white,
-                    child: Column(
-                      children: [
-                        Stack(
-                          children: [
-                            CarouselSlider(
-                              items: imgList
-                                  .map((item) => Image.asset(item,
-                                      fit: BoxFit.cover,
-                                      width: double.infinity))
-                                  .toList(),
-                              options: CarouselOptions(
-                                height: 400,
-                                autoPlay: true,
-                                autoPlayInterval: const Duration(seconds: 5),
-                                viewportFraction: 1.0,
-                                enlargeCenterPage: false,
+          SizedBox(
+            height: screenHeight,
+            width: screenWidth,
+            child: SingleChildScrollView(
+              child: Stack(
+                children: [
+                  ClipPath(
+                    child: Container(
+                      color: Colors.white,
+                      child: Column(
+                        children: [
+                          Stack(
+                            children: [
+                              CarouselSlider(
+                                items: imgList
+                                    .map((item) => Image.asset(item,
+                                        fit: BoxFit.cover,
+                                        width: double.infinity))
+                                    .toList(),
+                                options: CarouselOptions(
+                                  height: screenHeight * 0.45,
+                                  autoPlay: true,
+                                  autoPlayInterval: const Duration(seconds: 5),
+                                  viewportFraction: 1.0,
+                                  enlargeCenterPage: false,
+                                ),
                               ),
-                            ),
-                            Positioned.fill(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      Colors.black.withAlpha(100),
-                                      Colors.black.withAlpha(100),
-                                    ],
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
+                              Positioned.fill(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        Colors.black.withAlpha(100),
+                                        Colors.black.withAlpha(100),
+                                      ],
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                            Positioned.fill(
-                              child: Center(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Image.asset(
-                                      'assets/images/Logo.png',
-                                      width: 150,
-                                      height: 150,
-                                    ),
-                                    const SizedBox(height: 0),
-                                    const Text(
-                                      'BeeHive Manager',
-                                      style: TextStyle(
-                                        color: Color(0xFFFFB22C),
-                                        fontSize: 28,
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 1.2,
+                              Positioned.fill(
+                                child: Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Image.asset(
+                                        'assets/images/Logo.png',
+                                        width: screenWidth * 0.35,
+                                        height: screenWidth * 0.35,
                                       ),
-                                    ),
-                                    const SizedBox(height: 10),
-                                  ],
+                                      const SizedBox(height: 8),
+                                      const Text(
+                                        'BeeHive Manager',
+                                        style: TextStyle(
+                                          color: Color(0xFFFFB22C),
+                                          fontSize: 26,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 1.2,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 10),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 340),
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(20),
-                        topRight: Radius.circular(20),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 40),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Username',
-                                  style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 12),
-                              Container(
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.grey),
-                                  borderRadius: BorderRadius.circular(30),
-                                  color: Colors.white,
-                                ),
-                                child: TextField(
-                                  controller: _usernameController,
-                                  decoration: const InputDecoration(
-                                    hintText: 'Enter username',
-                                    prefixIcon:
-                                        Icon(Icons.person, color: Colors.grey),
-                                    border: InputBorder.none,
-                                    contentPadding:
-                                        EdgeInsets.symmetric(vertical: 12),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.only(top: screenHeight * 0.42),
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(20),
+                          topRight: Radius.circular(20),
                         ),
-                        const SizedBox(height: 20),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Password',
-                                  style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 12),
-                              Container(
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.grey),
-                                  borderRadius: BorderRadius.circular(30),
-                                  color: Colors.white,
-                                ),
-                                child: TextField(
-                                  controller: _passwordController,
-                                  obscureText: !_showPassword,
-                                  onChanged: (password) {
-                                    setState(() {
-                                      _passwordStrength =
-                                          _validatePassword(password);
-                                    });
-                                  },
-                                  decoration: InputDecoration(
-                                    hintText: 'Enter password',
-                                    prefixIcon: const Icon(Icons.lock,
-                                        color: Colors.grey),
-                                    border: InputBorder.none,
-                                    contentPadding: const EdgeInsets.symmetric(
-                                        vertical: 12),
-                                    suffixIcon: IconButton(
-                                      icon: Icon(
-                                        _showPassword
-                                            ? Icons.visibility
-                                            : Icons.visibility_off,
-                                        color: Colors.grey,
-                                      ),
-                                      onPressed: () {
-                                        setState(() {
-                                          _showPassword = !_showPassword;
-                                        });
-                                      },
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              _buildPasswordStrengthMeter(_passwordStrength),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        if (_errorMessage.isNotEmpty)
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SizedBox(height: 30),
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                            child: Text(
-                              _errorMessage,
-                              style: const TextStyle(color: Colors.red),
-                            ),
-                          ),
-                        const SizedBox(height: 1.0),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton(
-                              onPressed: () {
-                                Navigator.pushNamed(context, '/fpassword');
-                              },
-                              child: const Text('Update Password?',
-                                  style: TextStyle(
-                                    color: Color(0xFFFFB22C), // Orange color
-                                    fontWeight: FontWeight.bold,
-                                  )),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 30),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: SizedBox(
-                            width: 260,
-                            child: ElevatedButton(
-                              onPressed: _isLoading ? null : _handleSubmit,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor:
-                                    const Color(0xFFFFB22C), // Orange color
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 15),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(30),
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Username',
+                                    style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold)),
+                                const SizedBox(height: 12),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.grey),
+                                    borderRadius: BorderRadius.circular(30),
+                                    color: Colors.white,
+                                  ),
+                                  child: TextField(
+                                    controller: _usernameController,
+                                    decoration: const InputDecoration(
+                                      hintText: 'Enter username',
+                                      prefixIcon: Icon(Icons.person,
+                                          color: Colors.grey),
+                                      border: InputBorder.none,
+                                      contentPadding:
+                                          EdgeInsets.symmetric(vertical: 12),
+                                    ),
+                                  ),
                                 ),
-                                elevation: 5.0,
-                              ),
-                              child: _isLoading
-                                  ? const CircularProgressIndicator(
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                          Colors.white),
-                                    )
-                                  : const Text(
-                                      'LOGIN',
-                                      style: TextStyle(
-                                        fontSize: 18.0,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Password',
+                                    style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold)),
+                                const SizedBox(height: 12),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.grey),
+                                    borderRadius: BorderRadius.circular(30),
+                                    color: Colors.white,
+                                  ),
+                                  child: TextField(
+                                    controller: _passwordController,
+                                    obscureText: !_showPassword,
+                                    onChanged: (password) {
+                                      setState(() {
+                                        _passwordStrength =
+                                            _validatePassword(password);
+                                      });
+                                    },
+                                    decoration: InputDecoration(
+                                      hintText: 'Enter password',
+                                      prefixIcon: const Icon(Icons.lock,
+                                          color: Colors.grey),
+                                      border: InputBorder.none,
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                              vertical: 12),
+                                      suffixIcon: IconButton(
+                                        icon: Icon(
+                                          _showPassword
+                                              ? Icons.visibility
+                                              : Icons.visibility_off,
+                                          color: Colors.grey,
+                                        ),
+                                        onPressed: () {
+                                          setState(() {
+                                            _showPassword = !_showPassword;
+                                          });
+                                        },
                                       ),
                                     ),
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                _buildPasswordStrengthMeter(
+                                    _passwordStrength),
+                              ],
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 40),
-                      ],
+                          const SizedBox(height: 20),
+                          if (_errorMessage.isNotEmpty)
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 20),
+                              child: Text(
+                                _errorMessage,
+                                style: const TextStyle(color: Colors.red),
+                              ),
+                            ),
+                          const SizedBox(height: 1.0),
+                          Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 20),
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: () {
+                                  Navigator.pushNamed(context, '/fpassword');
+                                },
+                                child: const Text('Update Password?',
+                                    style: TextStyle(
+                                      color: Color(0xFFFFB22C),
+                                      fontWeight: FontWeight.bold,
+                                    )),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 30),
+                          Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 20),
+                            child: SizedBox(
+                              width: 260,
+                              child: ElevatedButton(
+                                onPressed:
+                                    _isLoading ? null : _handleSubmit,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor:
+                                      const Color(0xFFFFB22C),
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 15),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(30),
+                                  ),
+                                  elevation: 5.0,
+                                ),
+                                child: _isLoading
+                                    ? const CircularProgressIndicator(
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                                Colors.white),
+                                      )
+                                    : const Text(
+                                        'LOGIN',
+                                        style: TextStyle(
+                                          fontSize: 18.0,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 100),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           if (_isLoading)
             Container(
-              // ignore: deprecated_member_use
               color: Colors.black.withOpacity(0.3),
               child: Center(
                 child: Container(
@@ -424,7 +434,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     borderRadius: BorderRadius.circular(15),
                     boxShadow: [
                       BoxShadow(
-                        // ignore: deprecated_member_use
                         color: Colors.black.withOpacity(0.1),
                         blurRadius: 10,
                         spreadRadius: 2,
@@ -436,7 +445,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       CircularProgressIndicator(
                         valueColor: AlwaysStoppedAnimation<Color>(
-                            Color(0xFF3A7D44)), // Green color
+                            Color(0xFF3A7D44)),
                         strokeWidth: 3,
                       ),
                       SizedBox(height: 15),

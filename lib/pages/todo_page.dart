@@ -1,17 +1,16 @@
 import 'dart:async';
-
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:pass_log/models/task_model.dart';
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
+import 'package:pass_log/models/task_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class TodoPage extends StatefulWidget {
   const TodoPage({Key? key}) : super(key: key);
 
   @override
-  _TodoPageState createState() => _TodoPageState();
+  State<TodoPage> createState() => _TodoPageState();
 }
 
 class _TodoPageState extends State<TodoPage> {
@@ -29,119 +28,92 @@ class _TodoPageState extends State<TodoPage> {
 
   Future<void> _fetchTasks() async {
     try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      String? token = prefs.getString('token');
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+
+      if (token == null) {
+        _showSnackBar('Authentication expired. Please log in again.');
+        Navigator.pushReplacementNamed(context, '/login');
+        return;
+      }
 
       final response = await http.get(
         Uri.parse('http://localhost:3000/api/v1/tasks/my-tasks'),
-        headers: {
-          'Authorization': 'Bearer $token',
-        },
+        headers: {'Authorization': 'Bearer $token'},
       );
 
       if (response.statusCode == 200) {
-        var data = json.decode(response.body);
-        List<dynamic> taskList = data['data'];
+        final data = json.decode(response.body);
+        final List<dynamic> taskList = data['data'];
         setState(() {
           tasks = taskList.map((json) => Task.fromJson(json)).toList();
           isLoading = false;
         });
       } else {
-        throw Exception('Failed to load tasks');
+        _showSnackBar('Failed to fetch tasks');
       }
     } catch (error) {
-      print('Error fetching tasks: $error');
-      setState(() {
-        isLoading = false;
-      });
+      debugPrint('Error fetching tasks: $error');
+      _showSnackBar('Error fetching tasks. Please try again.');
     }
   }
 
   Future<void> _addTask() async {
-  try {
-    // Validate input
     if (_titleController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Task title is required')),
-      );
+      _showSnackBar('Task title is required');
       return;
     }
 
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? token = prefs.getString('token');
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
 
-    if (token == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Authentication error. Please log in again.')),
-      );
-      Navigator.pushReplacementNamed(context, '/login');
-      return;
+      if (token == null) {
+        _showSnackBar('Authentication expired. Please log in again.');
+        Navigator.pushReplacementNamed(context, '/login');
+        return;
+      }
+
+      final response = await http
+          .post(
+            Uri.parse('http://localhost:3000/api/v1/tasks'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+            body: json.encode({
+              'title': _titleController.text,
+              'description': _descriptionController.text,
+              'dueDate': _selectedDate?.toIso8601String(),
+              'status': 'todo',
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 201) {
+        _titleController.clear();
+        _descriptionController.clear();
+        setState(() => _selectedDate = null);
+
+        _showSnackBar('Task added successfully');
+        _fetchTasks();
+      } else {
+        final responseData = json.decode(response.body);
+        final errorMessage = responseData['message'] ?? 'Failed to add task';
+        _showSnackBar(errorMessage);
+      }
+    } on TimeoutException {
+      _showSnackBar('Request timed out. Please try again.');
+    } catch (error) {
+      debugPrint('Error adding task: $error');
+      _showSnackBar('Error adding task. Please try again.');
     }
-
-    final response = await http.post(
-      Uri.parse('http://localhost:3000/api/v1/tasks'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-      body: json.encode({
-        'title': _titleController.text,
-        'description': _descriptionController.text,
-        'dueDate': _selectedDate?.toIso8601String(),
-        'status': 'todo',
-      }),
-    ).timeout(const Duration(seconds: 10));
-
-    print('Response status: ${response.statusCode}');
-    print('Response body: ${response.body}');
-
-    if (response.statusCode == 201) {
-      _titleController.clear();
-      _descriptionController.clear();
-      setState(() {
-        _selectedDate = null;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Task added successfully')),
-      );
-      _fetchTasks(); // Refresh the task list
-    } else {
-      // Try to parse error message from response
-      final Map<String, dynamic> responseData = json.decode(response.body);
-      final String errorMessage = responseData['message'] ?? 'Failed to add task';
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errorMessage)),
-      );
-      throw Exception(errorMessage);
-    }
-  } on http.ClientException catch (e) {
-    print('Network error: $e');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Network error. Please check your connection.')),
-    );
-  } on TimeoutException catch (e) {
-    print('Request timeout: $e');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Request timeout. Please try again.')),
-    );
-  } on FormatException catch (e) {
-    print('JSON format error: $e');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Data format error. Please try again.')),
-    );
-  } catch (error) {
-    print('Error adding task: $error');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Unexpected error. Please try again.')),
-    );
   }
-}
 
   Future<void> _updateTaskStatus(String taskId, String newStatus) async {
     try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      String? token = prefs.getString('token');
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
 
       final response = await http.patch(
         Uri.parse('http://localhost:3000/api/v1/tasks/$taskId'),
@@ -149,124 +121,170 @@ class _TodoPageState extends State<TodoPage> {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-        body: json.encode({
-          'status': newStatus,
-        }),
+        body: json.encode({'status': newStatus}),
       );
 
       if (response.statusCode == 200) {
-        _fetchTasks(); // Refresh the task list
+        _fetchTasks();
       } else {
-        throw Exception('Failed to update task');
+        _showSnackBar('Failed to update task');
       }
     } catch (error) {
-      print('Error updating task: $error');
+      debugPrint('Error updating task: $error');
     }
   }
 
   Future<void> _deleteTask(String taskId) async {
     try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      String? token = prefs.getString('token');
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
 
       final response = await http.delete(
         Uri.parse('http://localhost:3000/api/v1/tasks/$taskId'),
-        headers: {
-          'Authorization': 'Bearer $token',
-        },
+        headers: {'Authorization': 'Bearer $token'},
       );
 
       if (response.statusCode == 200) {
-        _fetchTasks(); // Refresh the task list
+        _fetchTasks();
+        _showSnackBar('Task deleted');
       } else {
-        throw Exception('Failed to delete task');
+        _showSnackBar('Failed to delete task');
       }
     } catch (error) {
-      print('Error deleting task: $error');
+      debugPrint('Error deleting task: $error');
     }
   }
 
   Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
+    final picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
       firstDate: DateTime.now(),
       lastDate: DateTime(2100),
     );
     if (picked != null && picked != _selectedDate) {
-      setState(() {
-        _selectedDate = picked;
-      });
+      setState(() => _selectedDate = picked);
     }
   }
 
-  Widget _buildTaskList(List<Task> tasks, String status) {
-    List<Task> filteredTasks = tasks.where((task) => task.status == status).toList();
-    
+  Widget _buildTaskList(String status) {
+    final filteredTasks =
+        tasks.where((task) => task.status == status).toList();
+
     if (filteredTasks.isEmpty) {
       return Center(
         child: Text(
           'No $status tasks',
-          style: TextStyle(color: Colors.grey),
+          style: const TextStyle(color: Colors.grey),
         ),
       );
     }
 
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
-      itemCount: filteredTasks.length,
-      itemBuilder: (context, index) {
-        Task task = filteredTasks[index];
-        return Card(
-          margin: EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-          child: ListTile(
-            title: Text(task.title),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (task.description.isNotEmpty) Text(task.description),
-                if (task.dueDate != null) 
-                  Text('Due: ${DateFormat.yMd().format(task.dueDate!)}'),
-              ],
+    return RefreshIndicator(
+      onRefresh: _fetchTasks,
+      child: ListView.builder(
+        itemCount: filteredTasks.length,
+        itemBuilder: (context, index) {
+          final task = filteredTasks[index];
+          return Card(
+            margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+            elevation: 3,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (status != 'done')
-                  IconButton(
-                    icon: Icon(Icons.check, color: Colors.green),
-                    onPressed: () {
-                      String newStatus = status == 'todo' ? 'inProgress' : 'done';
-                      _updateTaskStatus(task.id, newStatus);
-                    },
+            child: ListTile(
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              title: Text(
+                task.title,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (task.description.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(task.description),
+                    ),
+                  if (task.dueDate != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        'Due: ${DateFormat.yMMMd().format(task.dueDate!)}',
+                        style: const TextStyle(color: Colors.black54),
+                      ),
+                    ),
+                  const SizedBox(height: 6),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Chip(
+                      label: Text(
+                        status.toUpperCase(),
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      backgroundColor: status == 'todo'
+                          ? Colors.redAccent
+                          : status == 'inProgress'
+                              ? Colors.blueAccent
+                              : Colors.green,
+                    ),
                   ),
-                IconButton(
-                  icon: Icon(Icons.delete, color: Colors.red),
-                  onPressed: () => _deleteTask(task.id),
-                ),
-              ],
+                ],
+              ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (status != 'done')
+                    IconButton(
+                      icon: const Icon(Icons.check_circle, color: Colors.green),
+                      onPressed: () {
+                        final newStatus =
+                            status == 'todo' ? 'inProgress' : 'done';
+                        _updateTaskStatus(task.id, newStatus);
+                      },
+                    ),
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.redAccent),
+                    onPressed: () => _deleteTask(task.id),
+                  ),
+                ],
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Task Manager'),
+        title: const Text(
+          'Task Manager',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         backgroundColor: Colors.amber[800],
+        foregroundColor: Colors.white,
+        elevation: 4,
+        //centerTitle: true,
       ),
       body: isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
-                // Add new task form
                 Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   child: Column(
                     children: [
                       TextField(
@@ -274,38 +292,55 @@ class _TodoPageState extends State<TodoPage> {
                         decoration: const InputDecoration(
                           labelText: 'Task Title',
                           border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.title),
                         ),
                       ),
                       const SizedBox(height: 10),
                       TextField(
                         controller: _descriptionController,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           labelText: 'Description (Optional)',
                           border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.description),
                         ),
                         maxLines: 2,
                       ),
-                      SizedBox(height: 10),
+                      const SizedBox(height: 10),
                       Row(
                         children: [
                           Expanded(
                             child: Text(
                               _selectedDate == null
-                                  ? 'No due date'
-                                  : 'Due: ${DateFormat.yMd().format(_selectedDate!)}',
+                                  ? 'No due date selected'
+                                  : 'Due: ${DateFormat.yMMMd().format(_selectedDate!)}',
+                              style: const TextStyle(fontSize: 14),
                             ),
                           ),
-                          TextButton(
+                          TextButton.icon(
                             onPressed: () => _selectDate(context),
-                            child: Text('Set Due Date'),
+                            icon: const Icon(Icons.calendar_today,
+                                color: Colors.amber),
+                            label: const Text('Set Due Date'),
                           ),
                         ],
                       ),
-                      ElevatedButton(
-                        onPressed: _addTask,
-                        child: Text('Add Task'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.amber[800],
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _addTask,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.amber[800],
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          icon: const Icon(Icons.add, color: Colors.white),
+                          label: const Text(
+                            'Add Task',
+                            style: TextStyle(color: Colors.white, fontSize: 16),
+                          ),
                         ),
                       ),
                     ],
@@ -316,21 +351,39 @@ class _TodoPageState extends State<TodoPage> {
                     length: 3,
                     child: Column(
                       children: [
-                        TabBar(
-                          indicatorColor: Colors.amber[800],
-                          labelColor: Colors.amber[800],
-                          tabs: [
-                            Tab(text: 'To Do (${tasks.where((t) => t.status == 'todo').length})'),
-                            Tab(text: 'In Progress (${tasks.where((t) => t.status == 'inProgress').length})'),
-                            Tab(text: 'Done (${tasks.where((t) => t.status == 'done').length})'),
-                          ],
+                        Container(
+                          color: Colors.grey[200],
+                          child: TabBar(
+                            indicatorColor: Colors.amber[800],
+                            labelColor: Colors.amber[800],
+                            unselectedLabelColor: Colors.black54,
+                            labelStyle:
+                                const TextStyle(fontWeight: FontWeight.bold),
+                            tabs: [
+                              Tab(
+                                icon: const Icon(Icons.list),
+                                text:
+                                    'To Do (${tasks.where((t) => t.status == 'todo').length})',
+                              ),
+                              Tab(
+                                icon: const Icon(Icons.work),
+                                text:
+                                    'In Progress (${tasks.where((t) => t.status == 'inProgress').length})',
+                              ),
+                              Tab(
+                                icon: const Icon(Icons.done_all),
+                                text:
+                                    'Done (${tasks.where((t) => t.status == 'done').length})',
+                              ),
+                            ],
+                          ),
                         ),
                         Expanded(
                           child: TabBarView(
                             children: [
-                              _buildTaskList(tasks, 'todo'),
-                              _buildTaskList(tasks, 'inProgress'),
-                              _buildTaskList(tasks, 'done'),
+                              _buildTaskList('todo'),
+                              _buildTaskList('inProgress'),
+                              _buildTaskList('done'),
                             ],
                           ),
                         ),

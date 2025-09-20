@@ -41,7 +41,7 @@ class Product {
       productName: json['productName'],
       productType: json['productType'],
       description: json['description'] ?? '',
-      quantity: json['quantity'].toDouble(),
+      quantity: (json['quantity'] as num).toDouble(),
       unit: json['unit'],
       price: json['price'].toDouble(),
       harvestDate: DateTime.parse(json['harvestDate']),

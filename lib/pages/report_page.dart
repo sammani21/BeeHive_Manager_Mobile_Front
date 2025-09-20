@@ -99,10 +99,11 @@ class _ReportsPageState extends State<ReportsPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Reports & Analytics',
-            style: TextStyle(fontWeight: FontWeight.bold)),
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white,)),
         backgroundColor: Colors.amber[700],
         elevation: 2,
         shadowColor: Colors.black.withOpacity(0.3),
+        foregroundColor: Colors.white,
         actions: [
           IconButton(
             icon: const Icon(Icons.download, size: 26),
@@ -214,7 +215,7 @@ class _ReportsPageState extends State<ReportsPage> {
           const SizedBox(width: 12),
           Expanded(
             child: _buildSummaryCard(
-              title: 'Avg Strength',
+              title: 'Strength',
               value: avgStrength.toStringAsFixed(1),
               icon: Icons.auto_graph,
               color: Colors.green,
@@ -223,7 +224,7 @@ class _ReportsPageState extends State<ReportsPage> {
           const SizedBox(width: 12),
           Expanded(
             child: _buildSummaryCard(
-              title: 'Strong Hives',
+              title: 'Hives',
               value: strongHives.toString(),
               icon: Icons.health_and_safety,
               color: Colors.amber,
@@ -244,7 +245,7 @@ class _ReportsPageState extends State<ReportsPage> {
         children: [
           Expanded(
             child: _buildSummaryCard(
-              title: 'Total Products',
+              title: 'Total',
               value: _products.length.toString(),
               icon: Icons.inventory,
               color: Colors.purple,

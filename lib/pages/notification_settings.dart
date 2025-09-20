@@ -60,8 +60,16 @@ class _NotificationSettingsScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Notification Settings'),
-      ),
+  title: const Text(
+    'Notification Settings',
+    style: TextStyle(
+      color: Colors.white, // ✅ Title text white
+      fontWeight: FontWeight.bold,
+    ),
+  ),
+  backgroundColor: Colors.amber[800],
+  foregroundColor: Colors.white, // ✅ Back arrow & action icons white
+),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

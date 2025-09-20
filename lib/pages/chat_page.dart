@@ -21,7 +21,7 @@ class _ChatPageState extends State<ChatPage> {
   final FocusNode _focusNode = FocusNode();
 
   // API endpoint - replace with your actual backend URL
-  static const String apiUrl = 'http://localhost:3000/api/v1/chat/chat';
+  static const String apiUrl = 'http://localhost:3000/api/v1/chat/chat/mock';
 
   @override
   void initState() {
@@ -132,8 +132,10 @@ class _ChatPageState extends State<ChatPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Beekeeping Assistant'),
+        title: const Text('Beekeeping Assistant',
+        ),
         backgroundColor: Colors.amber[700],
+        foregroundColor: Colors.white,
         actions: [
           IconButton(
             icon: const Icon(Icons.info_outline),

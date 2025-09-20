@@ -1,6 +1,6 @@
 // models/hive_model.dart
 class Hive {
-  //final String id;
+  final String id;
   final String hiveName;
   final String hiveType;
   final DateTime installationDate;
@@ -16,7 +16,7 @@ class Hive {
   final int population;
 
   Hive({
-   // required this.id,
+    required this.id,
     required this.hiveName,
     required this.hiveType,
     required this.installationDate,
@@ -34,7 +34,7 @@ class Hive {
 
   factory Hive.fromJson(Map<String, dynamic> json) {
     return Hive(
-     // id: json['_id'],
+      id: json['_id'],
       hiveName: json['hiveName'],
       hiveType: json['hiveType'],
       installationDate: DateTime.parse(json['installationDate']),

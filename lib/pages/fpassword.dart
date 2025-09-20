@@ -394,15 +394,15 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                           const SizedBox(height: 40),
                           TextButton(
                             onPressed: () {
-                              Navigator.pop(context); // Navigate back to login
-                            },
+                                  Navigator.pushNamed(context, '/login');
+                                },
                             child: const Text('Back to Login',
                                 style: TextStyle(
-                                  color: Color(0xFFFFB22C), // Orange color
+                                  color: Color(0xFFFFB22C), 
                                   fontWeight: FontWeight.bold,
                                 )),
                           ),
-                          const SizedBox(height: 50),
+                          const SizedBox(height: 100),
                         ],
                       ),
                     ),
