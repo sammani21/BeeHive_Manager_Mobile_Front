@@ -55,7 +55,7 @@ class _ChatPageState extends State<ChatPage> {
     
     String message = _controller.text;
     _controller.clear();
-    _focusNode.unfocus(); // Hide keyboard
+    _focusNode.unfocus(); 
     
     // Scroll to bottom to show new message
     _scrollToBottom();
