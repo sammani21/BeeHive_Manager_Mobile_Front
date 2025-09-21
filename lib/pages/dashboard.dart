@@ -7,10 +7,10 @@ import 'package:pass_log/models/hive_model.dart';
 
 import '../services/api_service.dart';
 import '../services/shared_prefs_service.dart';
-import '../components/welcome_card.dart';
-import '../components/hive_stats_grid.dart';
-import '../components/production_stats_grid.dart';
-import '../components/quick_actions_grid.dart';
+import '../components/dashboard/welcome_card.dart';
+import '../components/dashboard/hive_stats_grid.dart';
+import '../components/dashboard/production_stats_grid.dart';
+import '../components/dashboard/quick_actions_grid.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
