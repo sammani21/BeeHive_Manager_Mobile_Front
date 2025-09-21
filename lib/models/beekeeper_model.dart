@@ -13,4 +13,6 @@ class Beekeeper {
       email: json['email'] ?? '',
     );
   }
+
+  Object? toJson() {}
 }

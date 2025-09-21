@@ -3,7 +3,6 @@ import 'package:pass_log/pages/login.dart';
 import 'package:pass_log/pages/updatep.dart';
 import 'package:pass_log/pages/getemail.dart';
 import 'package:pass_log/pages/fpassword.dart';
-import 'package:pass_log/pages/formpage.dart';
 import 'package:pass_log/pages/chat_page.dart';
 import 'package:pass_log/pages/hives_page.dart';
 import 'package:pass_log/pages/insights_page.dart';
@@ -54,7 +53,6 @@ class MyApp extends StatelessWidget {
                   ModalRoute.of(context)!.settings.arguments as String,
             ),
         '/get_email': (context) => const GetEmailScreen(),
-        '/form': (context) => const FormPage(),
         '/chat': (context) => const ChatPage(userId: 'user123'),
         '/hives': (context) => const HivesPage(),
         '/insights': (context) => const InsightsPage(),
