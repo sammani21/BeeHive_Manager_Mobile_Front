@@ -2,10 +2,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import '../models/hive_model.dart';
+import 'package:pass_log/services/hive_service.dart';
+import 'package:pass_log/models/hive_model.dart';
+import 'package:pass_log/utils/form_utils.dart';
+import 'package:pass_log/components/hive_form/section_header.dart';
+import 'package:pass_log/components/hive_form/date_field.dart';
+import 'package:pass_log/components/hive_form/disease_signs_dialog.dart';
+import 'package:pass_log/components/hive_form/treatment_dialog.dart';
+import 'package:pass_log/components/hive_form/recommendation_dialog.dart';
+import 'package:pass_log/components/hive_form/disease_chips.dart';
+import 'package:pass_log/components/hive_form/treatment_list.dart';
 
 class AddHivePage extends StatefulWidget {
   final Hive? hive;
@@ -13,8 +19,7 @@ class AddHivePage extends StatefulWidget {
   const AddHivePage({super.key, this.hive});
 
   @override
-  // ignore: library_private_types_in_public_api
-  _AddHivePageState createState() => _AddHivePageState();
+  State<AddHivePage> createState() => _AddHivePageState();
 }
 
 class _AddHivePageState extends State<AddHivePage> {
@@ -55,13 +60,6 @@ class _AddHivePageState extends State<AddHivePage> {
   // Loading state
   bool _isLoading = false;
   String? _errorText;
-  
-  // Color scheme
-  final Color primaryColor = const Color(0xFFFFB22C);
-  final Color backgroundColor = const Color(0xFFF8F9FA);
-  final Color cardColor = Colors.white;
-  final Color textColor = const Color(0xFF343A40);
-  final Color secondaryTextColor = const Color(0xFF6C757D);
 
   @override
   void initState() {
@@ -95,67 +93,17 @@ class _AddHivePageState extends State<AddHivePage> {
     }
   }
 
-  Future<void> _selectDate(BuildContext context, TextEditingController controller) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
-    if (picked != null) {
-      setState(() {
-        controller.text = DateFormat('yyyy-MM-dd').format(picked);
-      });
-    }
-  }
-
   void _showDiseaseSignsDialog() {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: const Text('Select Disease Signs'),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: _diseaseOptions.length,
-                  itemBuilder: (BuildContext context, int index) {
-                    final disease = _diseaseOptions[index];
-                    return CheckboxListTile(
-                      title: Text(disease),
-                      value: _selectedDiseaseSigns.contains(disease),
-                      onChanged: (bool? value) {
-                        setState(() {
-                          if (value == true) {
-                            _selectedDiseaseSigns.add(disease);
-                          } else {
-                            _selectedDiseaseSigns.remove(disease);
-                          }
-                        });
-                      },
-                    );
-                  },
-                ),
-              ),
-              actions: <Widget>[
-                TextButton(
-                  child: const Text('Cancel'),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                ),
-                TextButton(
-                  child: const Text('OK'),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    setState(() {});
-                  },
-                ),
-              ],
-            );
+        return DiseaseSignsDialog(
+          selectedDiseaseSigns: _selectedDiseaseSigns,
+          diseaseOptions: _diseaseOptions,
+          onDiseaseSignsChanged: (newDiseaseSigns) {
+            setState(() {
+              _selectedDiseaseSigns = newDiseaseSigns;
+            });
           },
         );
       },
@@ -166,75 +114,12 @@ class _AddHivePageState extends State<AddHivePage> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        final treatmentTypeController = TextEditingController();
-        final notesController = TextEditingController();
-        final applicationDateController = TextEditingController(
-          text: DateFormat('yyyy-MM-dd').format(DateTime.now())
-        );
-
-        return AlertDialog(
-          title: const Text('Add Treatment'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: treatmentTypeController,
-                  decoration: const InputDecoration(
-                    labelText: 'Treatment Type',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter treatment type';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: applicationDateController,
-                  decoration: const InputDecoration(
-                    labelText: 'Application Date',
-                    border: OutlineInputBorder(),
-                    suffixIcon: Icon(Icons.calendar_today),
-                  ),
-                  readOnly: true,
-                  onTap: () => _selectDate(context, applicationDateController),
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: notesController,
-                  decoration: const InputDecoration(
-                    labelText: 'Notes',
-                    border: OutlineInputBorder(),
-                  ),
-                  maxLines: 3,
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (treatmentTypeController.text.isNotEmpty) {
-                  setState(() {
-                    _treatments.add(Treatment(
-                      treatmentType: treatmentTypeController.text,
-                      applicationDate: DateFormat('yyyy-MM-dd').parse(applicationDateController.text),
-                      notes: notesController.text,
-                    ));
-                  });
-                  Navigator.of(context).pop();
-                }
-              },
-              child: const Text('Add'),
-            ),
-          ],
+        return TreatmentDialog(
+          onAddTreatment: (newTreatment) {
+            setState(() {
+              _treatments.add(newTreatment);
+            });
+          },
         );
       },
     );
@@ -257,19 +142,6 @@ class _AddHivePageState extends State<AddHivePage> {
     });
 
     try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      String? token = prefs.getString('token');
-
-      
-      
-      if (token == null) {
-        setState(() {
-          _isLoading = false;
-          _errorText = 'Authentication error. Please log in again.';
-        });
-        return;
-      }
-
       final Map<String, dynamic> hiveData = {
         'hiveName': _hiveNameController.text,
         'hiveType': _hiveTypeController.text,
@@ -290,30 +162,13 @@ class _AddHivePageState extends State<AddHivePage> {
         'population': int.parse(_populationController.text),
       };
 
-      final String url = widget.hive != null
-          ? 'http://localhost:3000/api/v1/hive/${widget.hive!}'
-          : 'http://localhost:3000/api/v1/hive';
+      final response = await HiveService.saveHive(
+        hiveData: hiveData,
+        hiveId: widget.hive?.id,
+      );
 
-      final response = widget.hive != null
-          ? await http.put(
-              Uri.parse(url),
-              headers: {
-                'Authorization': 'Bearer $token',
-                'Content-Type': 'application/json',
-              },
-              body: json.encode(hiveData),
-            )
-          : await http.post(
-              Uri.parse(url),
-              headers: {
-                'Authorization': 'Bearer $token',
-                'Content-Type': 'application/json',
-              },
-              body: json.encode(hiveData),
-            );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final responseData = json.decode(response.body);
+      if (response['success'] == true) {
+        final responseData = response['data'];
         
         // Extract recommendation from response
         String? recommendation = responseData['data']?['recommendation'];
@@ -335,8 +190,7 @@ class _AddHivePageState extends State<AddHivePage> {
           Navigator.pop(context, true);
         }
       } else {
-        final errorData = json.decode(response.body);
-        throw Exception(errorData['message'] ?? 'Failed to save hive');
+        throw Exception(response['error']);
       }
     } catch (error) {
       setState(() {
@@ -372,7 +226,7 @@ void _showRecommendationDialog(String recommendation) {
           children: [
             Icon(
               Icons.lightbulb,
-              color: primaryColor,
+              color: FormUtils.primaryColor,
               size: 28,
             ),
             const SizedBox(width: 12),
@@ -400,10 +254,10 @@ void _showRecommendationDialog(String recommendation) {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: primaryColor.withOpacity(0.1),
+                    color: FormUtils.primaryColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: primaryColor.withOpacity(0.3),
+                      color: FormUtils.primaryColor.withOpacity(0.3),
                       width: 1,
                     ),
                   ),
@@ -464,11 +318,11 @@ void _showRecommendationDialog(String recommendation) {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.copy, size: 16, color: secondaryTextColor),
+                const Icon(Icons.copy, size: 16, color: FormUtils.secondaryTextColor),
                 const SizedBox(width: 4),
                 Text(
                   'Copy',
-                  style: TextStyle(color: secondaryTextColor),
+                  style: TextStyle(color: FormUtils.secondaryTextColor),
                 ),
               ],
             ),
@@ -479,7 +333,7 @@ void _showRecommendationDialog(String recommendation) {
               Navigator.pop(context, true); // Return to previous screen
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: primaryColor,
+              backgroundColor: FormUtils.primaryColor,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -497,28 +351,29 @@ void _showRecommendationDialog(String recommendation) {
   );
 }
 
+
   @override
   Widget build(BuildContext context) {
     final bool isSmallScreen = MediaQuery.of(context).size.width < 600;
     final double horizontalPadding = isSmallScreen ? 16.0 : 24.0;
     
     return Scaffold(
-      backgroundColor: backgroundColor,
+      backgroundColor: FormUtils.backgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.amber[700],
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color.fromARGB(255, 255, 255, 255)),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           widget.hive == null ? 'Add New Hive' : 'Edit Hive',
-          style: const TextStyle(color: Color.fromARGB(255, 255, 255, 255), fontWeight: FontWeight.bold),
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.save, color: Color(0xFFFFB22C)),
+            icon: const Icon(Icons.save, color: Colors.white),
             onPressed: _isLoading ? null : _saveHive,
             tooltip: 'Save Hive',
           ),
@@ -559,7 +414,7 @@ void _showRecommendationDialog(String recommendation) {
                       ],
                       
                       // Basic Information Section
-                      _buildSectionHeader('Basic Information'),
+                      const SectionHeader(title: 'Basic Information', icon: Icons.info),
                       Card(
                         elevation: 2,
                         shape: RoundedRectangleBorder(
@@ -579,7 +434,7 @@ void _showRecommendationDialog(String recommendation) {
                                   prefixIcon: const Icon(Icons.title),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: primaryColor, width: 2),
+                                    borderSide: const BorderSide(color: FormUtils.primaryColor, width: 2),
                                   ),
                                 ),
                                 validator: (value) {
@@ -600,7 +455,7 @@ void _showRecommendationDialog(String recommendation) {
                                   prefixIcon: const Icon(Icons.category),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: primaryColor, width: 2),
+                                    borderSide: const BorderSide(color: FormUtils.primaryColor, width: 2),
                                   ),
                                 ),
                                 items: ['Langstroth', 'Top Bar', 'Warre', 'Flow', 'Other']
@@ -626,7 +481,7 @@ void _showRecommendationDialog(String recommendation) {
                                   prefixIcon: const Icon(Icons.location_on),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: primaryColor, width: 2),
+                                    borderSide: const BorderSide(color: FormUtils.primaryColor, width: 2),
                                   ),
                                 ),
                               ),
@@ -638,7 +493,7 @@ void _showRecommendationDialog(String recommendation) {
                       const SizedBox(height: 16),
                       
                       // Dates Section
-                      _buildSectionHeader('Dates'),
+                      const SectionHeader(title: 'Dates', icon: Icons.calendar_today),
                       Card(
                         elevation: 2,
                         shape: RoundedRectangleBorder(
@@ -648,38 +503,16 @@ void _showRecommendationDialog(String recommendation) {
                           padding: EdgeInsets.all(isSmallScreen ? 12.0 : 16.0),
                           child: Column(
                             children: [
-                              TextFormField(
+                              DateField(
                                 controller: _installationDateController,
-                                decoration: InputDecoration(
-                                  labelText: 'Installation Date',
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  suffixIcon: const Icon(Icons.calendar_today),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: primaryColor, width: 2),
-                                  ),
-                                ),
-                                readOnly: true,
-                                onTap: () => _selectDate(context, _installationDateController),
+                                labelText: 'Installation Date',
+                                prefixIcon: Icons.date_range,
                               ),
                               const SizedBox(height: 16),
-                              TextFormField(
+                              DateField(
                                 controller: _lastInspectionController,
-                                decoration: InputDecoration(
-                                  labelText: 'Last Inspection Date',
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  suffixIcon: const Icon(Icons.calendar_today),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: primaryColor, width: 2),
-                                  ),
-                                ),
-                                readOnly: true,
-                                onTap: () => _selectDate(context, _lastInspectionController),
+                                labelText: 'Last Inspection Date',
+                                prefixIcon: Icons.date_range,
                               ),
                             ],
                           ),
@@ -689,7 +522,7 @@ void _showRecommendationDialog(String recommendation) {
                       const SizedBox(height: 16),
                       
                       // Colony Health Section
-                      _buildSectionHeader('Colony Health'),
+                      const SectionHeader(title: 'Colony Health', icon: Icons.health_and_safety),
                       Card(
                         elevation: 2,
                         shape: RoundedRectangleBorder(
@@ -720,7 +553,7 @@ void _showRecommendationDialog(String recommendation) {
                                 max: 10,
                                 divisions: 10,
                                 label: _strengthValue.round().toString(),
-                                activeColor: primaryColor,
+                                activeColor: FormUtils.primaryColor,
                                 onChanged: (double value) {
                                   setState(() {
                                     _strengthValue = value;
@@ -738,7 +571,7 @@ void _showRecommendationDialog(String recommendation) {
                                   prefixIcon: const Icon(Icons.emoji_nature),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: primaryColor, width: 2),
+                                    borderSide: const BorderSide(color: FormUtils.primaryColor, width: 2),
                                   ),
                                 ),
                                 items: ['Present', 'Not Present', 'Unknown']
@@ -764,7 +597,7 @@ void _showRecommendationDialog(String recommendation) {
                                   prefixIcon: const Icon(Icons.grid_on),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: primaryColor, width: 2),
+                                    borderSide: const BorderSide(color: FormUtils.primaryColor, width: 2),
                                   ),
                                 ),
                                 items: ['Solid', 'Spotty', 'None', 'Other']
@@ -793,7 +626,7 @@ void _showRecommendationDialog(String recommendation) {
                                           prefixIcon: const Icon(Icons.people),
                                           focusedBorder: OutlineInputBorder(
                                             borderRadius: BorderRadius.circular(12),
-                                            borderSide: BorderSide(color: primaryColor, width: 2),
+                                            borderSide: const BorderSide(color: FormUtils.primaryColor, width: 2),
                                           ),
                                         ),
                                         keyboardType: TextInputType.number,
@@ -812,7 +645,7 @@ void _showRecommendationDialog(String recommendation) {
                                           prefixIcon: const Icon(Icons.local_drink),
                                           focusedBorder: OutlineInputBorder(
                                             borderRadius: BorderRadius.circular(12),
-                                            borderSide: BorderSide(color: primaryColor, width: 2),
+                                            borderSide: const BorderSide(color: FormUtils.primaryColor, width: 2),
                                           ),
                                         ),
                                         keyboardType: TextInputType.number,
@@ -835,7 +668,7 @@ void _showRecommendationDialog(String recommendation) {
                                             prefixIcon: const Icon(Icons.people),
                                             focusedBorder: OutlineInputBorder(
                                               borderRadius: BorderRadius.circular(12),
-                                              borderSide: BorderSide(color: primaryColor, width: 2),
+                                              borderSide: const BorderSide(color: FormUtils.primaryColor, width: 2),
                                             ),
                                           ),
                                           keyboardType: TextInputType.number,
@@ -856,7 +689,7 @@ void _showRecommendationDialog(String recommendation) {
                                             prefixIcon: const Icon(Icons.local_drink),
                                             focusedBorder: OutlineInputBorder(
                                               borderRadius: BorderRadius.circular(12),
-                                              borderSide: BorderSide(color: primaryColor, width: 2),
+                                              borderSide: const BorderSide(color: FormUtils.primaryColor, width: 2),
                                             ),
                                           ),
                                           keyboardType: TextInputType.number,
@@ -878,7 +711,7 @@ void _showRecommendationDialog(String recommendation) {
                                   prefixIcon: const Icon(Icons.bug_report),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: primaryColor, width: 2),
+                                    borderSide: const BorderSide(color: FormUtils.primaryColor, width: 2),
                                   ),
                                 ),
                                 keyboardType: TextInputType.number,
@@ -894,7 +727,7 @@ void _showRecommendationDialog(String recommendation) {
                       const SizedBox(height: 16),
                       
                       // Disease Signs Section
-                      _buildSectionHeader('Disease Signs'),
+                      const SectionHeader(title: 'Disease Signs', icon: Icons.health_and_safety),
                       Card(
                         elevation: 2,
                         shape: RoundedRectangleBorder(
@@ -909,8 +742,8 @@ void _showRecommendationDialog(String recommendation) {
                                 children: [
                                   const Icon(Icons.health_and_safety, color: Colors.red, size: 20),
                                   const SizedBox(width: 8),
-                                  Expanded(
-                                    child: const Text(
+                                  const Expanded(
+                                    child: Text(
                                       'Disease Signs Observed',
                                       style: TextStyle(fontWeight: FontWeight.bold),
                                     ),
@@ -920,7 +753,7 @@ void _showRecommendationDialog(String recommendation) {
                                     icon: const Icon(Icons.add, size: 18),
                                     label: Text(isSmallScreen ? '' : 'Select'),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: primaryColor,
+                                      backgroundColor: FormUtils.primaryColor,
                                       foregroundColor: Colors.white,
                                       padding: isSmallScreen 
                                         ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
@@ -930,25 +763,14 @@ void _showRecommendationDialog(String recommendation) {
                                 ],
                               ),
                               const SizedBox(height: 8),
-                              if (_selectedDiseaseSigns.isEmpty)
-                                const Text('No disease signs selected', style: TextStyle(color: Colors.grey))
-                              else
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
-                                  children: _selectedDiseaseSigns
-                                      .map((sign) => Chip(
-                                            label: Text(sign),
-                                            backgroundColor: Colors.amber[50],
-                                            deleteIcon: const Icon(Icons.close, size: 16),
-                                            onDeleted: () {
-                                              setState(() {
-                                                _selectedDiseaseSigns.remove(sign);
-                                              });
-                                            },
-                                          ))
-                                      .toList(),
-                                ),
+                              DiseaseChips(
+                                selectedDiseaseSigns: _selectedDiseaseSigns,
+                                onRemoveDisease: (disease) {
+                                  setState(() {
+                                    _selectedDiseaseSigns.remove(disease);
+                                  });
+                                },
+                              ),
                             ],
                           ),
                         ),
@@ -957,7 +779,7 @@ void _showRecommendationDialog(String recommendation) {
                       const SizedBox(height: 16),
                       
                       // Treatments Section
-                      _buildSectionHeader('Treatments'),
+                      const SectionHeader(title: 'Treatments', icon: Icons.medical_services),
                       Card(
                         elevation: 2,
                         shape: RoundedRectangleBorder(
@@ -983,7 +805,7 @@ void _showRecommendationDialog(String recommendation) {
                                     icon: const Icon(Icons.add, size: 18),
                                     label: Text(isSmallScreen ? '' : 'Add Treatment'),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: primaryColor,
+                                      backgroundColor: FormUtils.primaryColor,
                                       foregroundColor: Colors.white,
                                       padding: isSmallScreen 
                                         ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
@@ -993,31 +815,10 @@ void _showRecommendationDialog(String recommendation) {
                                 ],
                               ),
                               const SizedBox(height: 8),
-                              if (_treatments.isEmpty)
-                                const Text('No treatments added', style: TextStyle(color: Colors.grey))
-                              else
-                                ..._treatments.asMap().entries.map((entry) {
-                                  final index = entry.key;
-                                  final treatment = entry.value;
-                                  return Card(
-                                    margin: const EdgeInsets.symmetric(vertical: 4),
-                                    color: Colors.amber[50],
-                                    child: ListTile(
-                                      title: Text(treatment.treatmentType),
-                                      subtitle: Text(
-                                        '${DateFormat('yyyy-MM-dd').format(treatment.applicationDate)} - ${treatment.notes}',
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      trailing: IconButton(
-                                        icon: const Icon(Icons.delete, color: Colors.red, size: 20),
-                                        onPressed: () => _removeTreatment(index),
-                                      ),
-                                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                                      visualDensity: VisualDensity.compact,
-                                    ),
-                                  );
-                                }),
+                              TreatmentList(
+                                treatments: _treatments,
+                                onRemoveTreatment: _removeTreatment,
+                              ),
                             ],
                           ),
                         ),
@@ -1048,7 +849,7 @@ void _showRecommendationDialog(String recommendation) {
                               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                             ),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: primaryColor,
+                              backgroundColor: FormUtils.primaryColor,
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
                               shape: RoundedRectangleBorder(
@@ -1066,20 +867,6 @@ void _showRecommendationDialog(String recommendation) {
               ),
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: primaryColor,
         ),
       ),
     );
