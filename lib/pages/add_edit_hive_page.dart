@@ -9,7 +9,7 @@ import 'package:pass_log/components/hive_form/section_header.dart';
 import 'package:pass_log/components/hive_form/date_field.dart';
 import 'package:pass_log/components/hive_form/disease_signs_dialog.dart';
 import 'package:pass_log/components/hive_form/treatment_dialog.dart';
-import 'package:pass_log/components/hive_form/recommendation_dialog.dart';
+
 import 'package:pass_log/components/hive_form/disease_chips.dart';
 import 'package:pass_log/components/hive_form/treatment_list.dart';
 

@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:month_picker_dialog/month_picker_dialog.dart';
-import 'package:intl/intl.dart';
+
 import 'dart:html' as html;
 import 'dart:ui' as ui;
 import 'package:flutter/rendering.dart';
@@ -91,6 +91,7 @@ class _InsightsPageState extends State<InsightsPage> {
           response.headers['content-type']?.contains('application/pdf') == true) {
         final blob = html.Blob([response.bodyBytes]);
         final url = html.Url.createObjectUrlFromBlob(blob);
+        // ignore: unused_local_variable
         final anchor = html.AnchorElement(href: url)
           ..download = 'production_report_${selectedYear}_$selectedMonth.pdf'
           ..click();

@@ -14,5 +14,6 @@ class Beekeeper {
     );
   }
 
+  // ignore: body_might_complete_normally_nullable
   Object? toJson() {}
 }

@@ -1,6 +1,5 @@
 // utils/task_utils.dart
 import 'package:flutter/material.dart';
-import 'package:pass_log/models/task_model.dart';
 
 class TaskUtils {
   static Color getStatusColor(String status) {

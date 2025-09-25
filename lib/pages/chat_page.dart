@@ -85,6 +85,7 @@ class _ChatPageState extends State<ChatPage> {
         });
         _scrollToBottom();
       } else {
+        // ignore: unused_local_variable
         final errorData = json.decode(response.body);
         throw Exception('Failed to get response from server');
       }
