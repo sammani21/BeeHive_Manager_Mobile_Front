@@ -12,7 +12,7 @@ import 'package:pass_log/pages/recommendations_page.dart';
 import 'package:pass_log/pages/todo_page.dart';
 import 'package:pass_log/pages/dashboard.dart';
 import 'package:pass_log/pages/notification_service.dart';
-import 'package:pass_log/pages/notificatio_manager.dart';
+import 'package:pass_log/pages/notification_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

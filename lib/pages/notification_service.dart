@@ -137,4 +137,6 @@ class NotificationService {
   Future<void> cancelAllNotifications() async {
     await localNotifications.cancelAll();
   }
+
+  scheduleDailyNotification({required int id, required String title, required String body, required TimeOfDay time}) {}
 }

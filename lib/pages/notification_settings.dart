@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'notification_preferences.dart';
@@ -8,7 +7,6 @@ class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});
 
   @override
-  // ignore: library_private_types_in_public_api
   _NotificationSettingsScreenState createState() =>
       _NotificationSettingsScreenState();
 }
@@ -60,60 +58,27 @@ class _NotificationSettingsScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-  title: const Text(
-    'Notification Settings',
-    style: TextStyle(
-      color: Colors.white, // ✅ Title text white
-      fontWeight: FontWeight.bold,
-    ),
-  ),
-  backgroundColor: Colors.amber[800],
-  foregroundColor: Colors.white, // ✅ Back arrow & action icons white
-),
+        title: const Text(
+          'Notification Settings',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: Colors.amber[800],
+        foregroundColor: Colors.white,
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _buildSectionHeader('Notification Types'),
+          _buildSectionHeader('Daily Hive Inspection'),
           _buildSwitchListTile(
-            'Hive Inspection Reminders',
-            'Weekly reminders to inspect your hives',
-            preferences.hiveInspectionEnabled,
+            'Daily Inspection Reminders',
+            'Receive daily reminders to inspect your hives',
+            preferences.dailyInspectionEnabled,
             (value) {
               setState(() {
-                preferences.hiveInspectionEnabled = value;
-              });
-              _savePreferences();
-            },
-          ),
-          _buildSwitchListTile(
-            'Monthly Review Notifications',
-            'Monthly reminders for full hive reviews',
-            preferences.monthlyReviewEnabled,
-            (value) {
-              setState(() {
-                preferences.monthlyReviewEnabled = value;
-              });
-              _savePreferences();
-            },
-          ),
-          _buildSwitchListTile(
-            'Queen Check Notifications',
-            'Weekly reminders to check on your queens',
-            preferences.queenCheckEnabled,
-            (value) {
-              setState(() {
-                preferences.queenCheckEnabled = value;
-              });
-              _savePreferences();
-            },
-          ),
-          _buildSwitchListTile(
-            'Event-Based Notifications',
-            'Recommendations when adding/updating hives',
-            preferences.eventBasedEnabled,
-            (value) {
-              setState(() {
-                preferences.eventBasedEnabled = value;
+                preferences.dailyInspectionEnabled = value;
               });
               _savePreferences();
             },
@@ -129,10 +94,24 @@ class _NotificationSettingsScreenState
             onTap: () => _selectTime(context),
           ),
           const SizedBox(height: 24),
-          _buildSectionHeader('Delivery Methods'),
-          _buildDeliveryMethodCheckbox('In-App Notifications', 'inApp'),
-          _buildDeliveryMethodCheckbox('Email', 'email'),
-          _buildDeliveryMethodCheckbox('SMS', 'sms'),
+          _buildSectionHeader('Last Inspection'),
+          ListTile(
+            title: const Text('Last Inspection Completed'),
+            subtitle: Text(
+              preferences.lastInspectionDate != null
+                  ? '${preferences.lastInspectionDate!.day}/${preferences.lastInspectionDate!.month}/${preferences.lastInspectionDate!.year}'
+                  : 'Never',
+            ),
+            trailing: IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: () {
+                setState(() {
+                  preferences.lastInspectionDate = null;
+                });
+                _savePreferences();
+              },
+            ),
+          ),
         ],
       ),
     );
@@ -162,24 +141,6 @@ class _NotificationSettingsScreenState
       subtitle: Text(subtitle),
       value: value,
       onChanged: onChanged,
-      activeColor: Colors.amber[800],
-    );
-  }
-
-  Widget _buildDeliveryMethodCheckbox(String title, String value) {
-    return CheckboxListTile(
-      title: Text(title),
-      value: preferences.deliveryMethods.contains(value),
-      onChanged: (bool? checked) {
-        setState(() {
-          if (checked == true) {
-            preferences.deliveryMethods.add(value);
-          } else {
-            preferences.deliveryMethods.remove(value);
-          }
-        });
-        _savePreferences();
-      },
       activeColor: Colors.amber[800],
     );
   }

@@ -1,4 +1,3 @@
-// home_page.dart
 import 'package:flutter/material.dart';
 import 'package:pass_log/components/bottom_nav_bar.dart';
 import 'package:pass_log/models/beekeeper_model.dart';
@@ -11,6 +10,7 @@ import '../components/dashboard/welcome_card.dart';
 import '../components/dashboard/hive_stats_grid.dart';
 import '../components/dashboard/production_stats_grid.dart';
 import '../components/dashboard/quick_actions_grid.dart';
+import 'notification_manager.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
@@ -26,19 +26,19 @@ class _MyHomePageState extends State<MyHomePage> {
   List<Hive> hives = [];
   List<Product> products = [];
   bool isLoading = true;
+  bool showInspectionNotification = false;
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    _checkNotificationStatus();
   }
 
   Future<void> _loadData() async {
     try {
-      // Try to get beekeeper from shared preferences first
       beekeeper = await SharedPrefsService.getBeekeeper();
       
-      // If not in shared preferences, fetch from API
       if (beekeeper == null) {
         beekeeper = await ApiService.fetchBeekeeperData();
         if (beekeeper != null) {
@@ -46,7 +46,6 @@ class _MyHomePageState extends State<MyHomePage> {
         }
       }
       
-      // Fetch hives and products in parallel
       final results = await Future.wait([
         ApiService.fetchHives(),
         ApiService.fetchProducts(),
@@ -65,11 +64,35 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  Future<void> _checkNotificationStatus() async {
+    final shouldShow = await getNotificationManager().shouldShowNotification();
+    setState(() {
+      showInspectionNotification = shouldShow;
+    });
+  }
+
+  Future<void> _markInspectionDone() async {
+    await getNotificationManager().markInspectionDone();
+    setState(() {
+      showInspectionNotification = false;
+    });
+    _showSuccessSnackbar('Inspection marked as completed!');
+  }
+
   void _showErrorSnackbar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  void _showSuccessSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
       ),
     );
   }
@@ -89,6 +112,60 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  Widget _buildInspectionNotification() {
+    // Only show if daily inspection is enabled AND notification should be shown
+    if (!showInspectionNotification) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.amber[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.amber[200]!),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.notifications_active, color: Colors.amber[800], size: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Daily Hive Inspection',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.amber[800],
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Time to inspect your hives for today',
+                  style: TextStyle(
+                    color: Colors.grey[700],
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          ElevatedButton(
+            onPressed: _markInspectionDone,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.amber[800],
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            ),
+            child: const Text('Done'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -101,6 +178,9 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
+                    // Inspection Notification Card - Only shows when enabled
+                    _buildInspectionNotification(),
+                    
                     WelcomeCard(
                       beekeeper: beekeeper,
                       hiveCount: hives.length,
