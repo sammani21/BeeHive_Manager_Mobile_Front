@@ -113,7 +113,6 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Widget _buildInspectionNotification() {
-    // Only show if daily inspection is enabled AND notification should be shown
     if (!showInspectionNotification) return const SizedBox.shrink();
 
     return Container(
@@ -178,21 +177,25 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    // Inspection Notification Card - Only shows when enabled
-                    _buildInspectionNotification(),
-                    
-                    WelcomeCard(
-                      beekeeper: beekeeper,
-                      hiveCount: hives.length,
-                      productCount: products.length,
-                    ),
-                    const SizedBox(height: 24),
-                    HiveStatsGrid(hives: hives),
-                    const SizedBox(height: 24),
-                    ProductionStatsGrid(products: products),
-                    const SizedBox(height: 24),
-                    const QuickActionsGrid(),
-                  ],
+  // Welcome Card first
+  WelcomeCard(
+    beekeeper: beekeeper,
+    hiveCount: hives.length,
+    productCount: products.length,
+  ),
+  
+  const SizedBox(height: 16), // Optional spacing
+  
+  // Inspection Notification Card after welcome card
+  _buildInspectionNotification(),
+  
+  const SizedBox(height: 24),
+  HiveStatsGrid(hives: hives),
+  const SizedBox(height: 24),
+  ProductionStatsGrid(products: products),
+  const SizedBox(height: 24),
+  const QuickActionsGrid(),
+],
                 ),
               ),
             ),
